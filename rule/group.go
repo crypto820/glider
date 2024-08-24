@@ -16,6 +16,8 @@ import (
 	"github.com/nadoo/glider/proxy"
 )
 
+const _HA_RR_LEN int = 16
+
 // forwarder slice orderd by priority.
 type priSlice []*Forwarder
 
@@ -40,7 +42,8 @@ func NewFwdrGroup(rulePath string, s []string, c *Strategy) *FwdrGroup {
 	var fwdrs []*Forwarder
 	for _, chain := range s {
 		fwdr, err := ForwarderFromURL(chain, c.IntFace,
-			time.Duration(c.DialTimeout)*time.Second, time.Duration(c.RelayTimeout)*time.Second)
+			// time.Duration(c.DialTimeout)*time.Second, time.Duration(c.RelayTimeout)*time.Second)
+			time.Duration(c.DialTimeout)*time.Millisecond, time.Duration(c.RelayTimeout)*time.Millisecond)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -203,7 +206,7 @@ func (p *FwdrGroup) Check() {
 	}
 
 	addr := u.Host
-	timeout := time.Duration(p.config.CheckTimeout) * time.Second
+	timeout := time.Duration(p.config.CheckTimeout) * time.Millisecond
 
 	var checker Checker
 	switch u.Scheme {
@@ -290,7 +293,8 @@ func (p *FwdrGroup) scheduleRR(dstAddr string) *Forwarder {
 
 // High Availability.
 func (p *FwdrGroup) scheduleHA(dstAddr string) *Forwarder {
-	return p.avail[0]
+	// return p.avail[0]
+	return p.avail[atomic.AddUint32(&p.index, 1)%uint32(min(len(p.avail), _HA_RR_LEN))]
 }
 
 // Latency based High Availability.
