@@ -55,7 +55,7 @@ func (c *Conn) Close() error {
 func Relay(left, right net.Conn) error {
 	var err, err1 error
 	var wg sync.WaitGroup
-	var wait = 100 * time.Millisecond
+	var wait = 5 * time.Second
 
 	wg.Add(1)
 	go func() {
